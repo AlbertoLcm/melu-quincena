@@ -1,0 +1,259 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: #6366f1;
+  --color-brand-secondary: #8b5cf6;
+  
+  --color-light-bg: #f1f5f9;
+  --color-light-surface: #ffffff;
+  --color-light-text: #0f172a;
+  --color-light-text-muted: #64748b;
+  --color-light-border: #e2e8f0;
+  
+  --color-dark-bg: #0c1221;
+  --color-dark-surface: #162032;
+  --color-dark-text: #f1f5f9;
+  --color-dark-text-muted: #94a3b8;
+  --color-dark-border: #2a3a52;
+
+  --color-needs: #3b82f6;
+  --color-needs-muted: rgba(59, 130, 246, 0.15);
+  
+  --color-wants: #d946ef;
+  --color-wants-muted: rgba(217, 70, 239, 0.15);
+  
+  --color-savings: #10b981;
+  --color-savings-muted: rgba(16, 185, 129, 0.15);
+
+  --color-danger: #ef4444;
+  --color-success: #10b981;
+
+  /* Mobile nav height token */
+  --mobile-nav-h: 68px;
+}
+
+@layer base {
+  :root {
+    --bg-color: var(--color-light-bg);
+    --surface-color: var(--color-light-surface);
+    --text-primary: var(--color-light-text);
+    --text-muted: var(--color-light-text-muted);
+    --border-color: var(--color-light-border);
+  }
+
+  .dark {
+    --bg-color: var(--color-dark-bg);
+    --surface-color: var(--color-dark-surface);
+    --text-primary: var(--color-dark-text);
+    --text-muted: var(--color-dark-text-muted);
+    --border-color: var(--color-dark-border);
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    /* Prevent horizontal overflow on mobile */
+    overflow-x: hidden;
+  }
+
+  /* Better mobile inputs */
+  input, select, textarea {
+    font-size: 16px; /* prevents iOS zoom on focus */
+  }
+
+  /* Placeholder color — legible in both modes */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 1; /* Firefox */
+  }
+
+  /* Select arrow color in dark mode */
+  .dark select {
+    color-scheme: dark;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-[var(--surface-color)]/80 backdrop-blur-md border border-[var(--border-color)] shadow-sm rounded-2xl;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-semibold px-4 py-2.5 rounded-xl transition-all hover:opacity-90 hover:-translate-y-0.5 active:scale-95 shadow-md flex items-center justify-center gap-2;
+  }
+
+  .btn-ghost {
+    @apply text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border-color)]/50 px-3 py-2 rounded-xl transition-colors flex items-center gap-2 font-medium;
+  }
+
+  .input-field {
+    @apply w-full bg-[var(--bg-color)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary/40 transition-shadow;
+  }
+
+  /* Inline inputs inside forms (BucketPanel) */
+  .inline-input {
+    @apply bg-[var(--bg-color)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary/40 transition-shadow;
+  }
+}
+
+/* ── Background Orbs ── */
+.bg-orbs {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background-color: var(--bg-color);
+  transition: background-color 0.3s ease;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+  animation: float 18s infinite ease-in-out alternate;
+}
+
+.dark .orb {
+  opacity: 0.2;
+}
+
+.orb-1 {
+  width: 380px;
+  height: 380px;
+  background: var(--color-needs);
+  top: -120px;
+  left: -100px;
+  animation-delay: 0s;
+}
+
+.orb-2 {
+  width: 280px;
+  height: 280px;
+  background: var(--color-wants);
+  bottom: -60px;
+  right: -60px;
+  animation-delay: -6s;
+}
+
+.orb-3 {
+  width: 320px;
+  height: 320px;
+  background: var(--color-savings);
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: -12s;
+}
+
+@keyframes float {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(25px, -45px) scale(1.08); }
+  66%  { transform: translate(-18px, 18px) scale(0.92); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+/* orb-3 needs its own transform to keep centered base */
+.orb-3 {
+  animation-name: float-3;
+}
+@keyframes float-3 {
+  0%   { transform: translate(-50%, -50%) scale(1); }
+  33%  { transform: translate(calc(-50% + 25px), calc(-50% - 45px)) scale(1.08); }
+  66%  { transform: translate(calc(-50% - 18px), calc(-50% + 18px)) scale(0.92); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* ── Mobile Bottom Navigation ── */
+.mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--mobile-nav-h);
+  background: var(--surface-color);
+  border-top: 1px solid var(--border-color);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.mobile-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  padding: 8px 4px;
+  letter-spacing: 0.02em;
+  min-height: 56px;
+}
+
+.mobile-nav-item.active {
+  color: var(--color-brand-primary);
+}
+
+.mobile-nav-icon-wrap {
+  width: 36px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.mobile-nav-icon-wrap.active {
+  background: rgba(99, 102, 241, 0.15);
+  transform: translateY(-2px);
+}
+
+/* ── Custom scrollbar ── */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ── Safe area for notched phones ── */
+@supports (padding: max(0px)) {
+  .mobile-nav {
+    padding-bottom: max(env(safe-area-inset-bottom), 8px);
+    height: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom, 0px));
+  }
+  main {
+    padding-bottom: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom, 0px) + 8px);
+  }
+}

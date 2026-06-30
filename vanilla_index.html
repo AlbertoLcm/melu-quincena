@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Melu Quincena — Gestión Financiera Inteligente</title>
+  <meta name="description"
+    content="Gestiona tus quincenas con la distribución 50/30/20. Control inteligente de necesidades, deseos y ahorros." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- Background orbs -->
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">◈</span>
+        <span class="logo-text">QuincenaFlow</span>
+      </div>
+      <div class="header-actions">
+        <button id="btn-history" class="btn-ghost" title="Historial">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+            <path d="M12 7v5l4 2" />
+          </svg>
+          Historial
+        </button>
+        <button id="btn-new-period" class="btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Nueva Quincena
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main App -->
+  <main class="app-container">
+
+    <!-- Welcome / Setup Screen -->
+    <section id="screen-setup" class="screen active">
+      <div class="setup-hero">
+        <div class="setup-badge">💼 Gestión Financiera</div>
+        <h1 class="setup-title">Toma el control de<br /><span class="gradient-text">tu quincena</span></h1>
+        <p class="setup-subtitle">Distribuye inteligentemente tu ingreso con la regla 50/30/20 y alcanza tus metas
+          financieras.</p>
+
+        <div class="setup-card">
+          <label class="input-label">¿Cuál es el monto de tu quincena?</label>
+          <div class="input-group">
+            <span class="input-prefix">$</span>
+            <input type="number" id="income-input" class="income-input" placeholder="0.00" min="0" step="0.01" />
+            <span class="input-currency">MXN</span>
+          </div>
+
+          <div class="date-range-group">
+            <div class="date-field">
+              <label class="input-label-sm">Fecha inicio</label>
+              <input type="date" id="date-start" class="date-input" />
+            </div>
+            <div class="date-separator">→</div>
+            <div class="date-field">
+              <label class="input-label-sm">Fecha fin</label>
+              <input type="date" id="date-end" class="date-input" />
+            </div>
+          </div>
+
+          <button id="btn-start" class="btn-start">
+            Comenzar distribución
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Rule preview cards -->
+        <div class="rule-cards">
+          <div class="rule-card rule-needs">
+            <div class="rule-pct">50%</div>
+            <div class="rule-label">Necesidades</div>
+            <div class="rule-desc">Renta, alimentación, servicios</div>
+          </div>
+          <div class="rule-card rule-wants">
+            <div class="rule-pct">30%</div>
+            <div class="rule-label">Deseos</div>
+            <div class="rule-desc">Entretenimiento, moda, salidas</div>
+          </div>
+          <div class="rule-card rule-savings">
+            <div class="rule-pct">20%</div>
+            <div class="rule-label">Ahorros</div>
+            <div class="rule-desc">Fondo de emergencia, inversiones</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dashboard Screen -->
+    <section id="screen-dashboard" class="screen">
+
+      <!-- Period info bar -->
+      <div class="period-bar">
+        <div class="period-info">
+          <span class="period-label">Quincena activa</span>
+          <span id="period-dates" class="period-dates">—</span>
+        </div>
+        <div class="period-income">
+          <span class="period-label">Ingreso total</span>
+          <span id="period-amount" class="period-amount">$0.00</span>
+        </div>
+        <div class="period-progress-wrap">
+          <span class="period-label">Gastado</span>
+          <div class="period-progress-bar">
+            <div id="period-progress-fill" class="period-progress-fill" style="width:0%"></div>
+          </div>
+          <span id="period-spent-pct" class="period-spent-pct">0%</span>
+        </div>
+      </div>
+
+      <!-- Donut + Summary -->
+      <div class="dashboard-top">
+        <div class="donut-section">
+          <div class="donut-wrapper">
+            <svg id="donut-chart" class="donut-svg" viewBox="0 0 200 200">
+              <circle class="donut-bg" cx="100" cy="100" r="80" />
+              <circle id="donut-needs" class="donut-segment donut-needs-seg" cx="100" cy="100" r="80"
+                stroke-dasharray="0 502" stroke-dashoffset="0" />
+              <circle id="donut-wants" class="donut-segment donut-wants-seg" cx="100" cy="100" r="80"
+                stroke-dasharray="0 502" stroke-dashoffset="0" />
+              <circle id="donut-savings" class="donut-segment donut-savings-seg" cx="100" cy="100" r="80"
+                stroke-dasharray="0 502" stroke-dashoffset="0" />
+              <text x="100" y="92" class="donut-center-label">Disponible</text>
+              <text id="donut-center-value" x="100" y="115" class="donut-center-value">$0</text>
+            </svg>
+          </div>
+          <div class="donut-legend">
+            <div class="legend-item" data-bucket="needs">
+              <span class="legend-dot needs-dot"></span>
+              <div class="legend-info">
+                <span class="legend-name">Necesidades</span>
+                <span id="legend-needs-val" class="legend-val">$0</span>
+              </div>
+              <span id="legend-needs-pct" class="legend-pct">50%</span>
+            </div>
+            <div class="legend-item" data-bucket="wants">
+              <span class="legend-dot wants-dot"></span>
+              <div class="legend-info">
+                <span class="legend-name">Deseos</span>
+                <span id="legend-wants-val" class="legend-val">$0</span>
+              </div>
+              <span id="legend-wants-pct" class="legend-pct">30%</span>
+            </div>
+            <div class="legend-item" data-bucket="savings">
+              <span class="legend-dot savings-dot"></span>
+              <div class="legend-info">
+                <span class="legend-name">Ahorros</span>
+                <span id="legend-savings-val" class="legend-val">$0</span>
+              </div>
+              <span id="legend-savings-pct" class="legend-pct">20%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick stats -->
+        <div class="quick-stats">
+          <div class="stat-card stat-available">
+            <div class="stat-icon">💰</div>
+            <div class="stat-data">
+              <span class="stat-label">Total disponible</span>
+              <span id="stat-available" class="stat-value">$0.00</span>
+            </div>
+          </div>
+          <div class="stat-card stat-spent">
+            <div class="stat-icon">📤</div>
+            <div class="stat-data">
+              <span class="stat-label">Total gastado</span>
+              <span id="stat-spent" class="stat-value">$0.00</span>
+            </div>
+          </div>
+          <div class="stat-card stat-remaining">
+            <div class="stat-icon">🏦</div>
+            <div class="stat-data">
+              <span class="stat-label">Saldo restante</span>
+              <span id="stat-remaining" class="stat-value">$0.00</span>
+            </div>
+          </div>
+          <div class="stat-card stat-days">
+            <div class="stat-icon">📅</div>
+            <div class="stat-data">
+              <span class="stat-label">Días restantes</span>
+              <span id="stat-days" class="stat-value">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bucket Tabs -->
+      <div class="bucket-tabs">
+        <button class="tab-btn tab-needs active" data-tab="needs">
+          <span class="tab-icon">🏠</span> Necesidades <span class="tab-badge needs-badge"
+            id="tab-needs-badge">50%</span>
+        </button>
+        <button class="tab-btn tab-wants" data-tab="wants">
+          <span class="tab-icon">✨</span> Deseos <span class="tab-badge wants-badge" id="tab-wants-badge">30%</span>
+        </button>
+        <button class="tab-btn tab-savings" data-tab="savings">
+          <span class="tab-icon">💎</span> Ahorros <span class="tab-badge savings-badge"
+            id="tab-savings-badge">20%</span>
+        </button>
+      </div>
+
+      <!-- Bucket Panels -->
+      <div id="bucket-panels" class="bucket-panels">
+
+        <!-- NEEDS PANEL -->
+        <div id="panel-needs" class="bucket-panel active">
+          <div class="panel-header">
+            <div class="panel-header-info">
+              <h2 class="panel-title needs-title">🏠 Necesidades</h2>
+              <p class="panel-subtitle">Gastos esenciales para vivir</p>
+            </div>
+            <div class="panel-budget-info">
+              <div class="budget-ring-wrap">
+                <svg class="budget-ring" viewBox="0 0 60 60">
+                  <circle cx="30" cy="30" r="25" class="budget-ring-bg" />
+                  <circle id="needs-ring" cx="30" cy="30" r="25" class="budget-ring-fill needs-ring-fill"
+                    stroke-dasharray="0 157" />
+                </svg>
+                <div class="budget-ring-label">
+                  <span id="needs-used-pct" class="budget-ring-pct">0%</span>
+                </div>
+              </div>
+              <div class="budget-amounts">
+                <div class="budget-row">
+                  <span>Presupuesto</span>
+                  <strong id="needs-budget" class="needs-color">$0.00</strong>
+                </div>
+                <div class="budget-row">
+                  <span>Gastado</span>
+                  <strong id="needs-spent">$0.00</strong>
+                </div>
+                <div class="budget-row">
+                  <span>Disponible</span>
+                  <strong id="needs-remaining" class="needs-color">$0.00</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="add-expense-bar">
+            <input type="text" id="needs-exp-name" class="exp-input" placeholder="Descripción del gasto..." />
+            <input type="number" id="needs-exp-amount" class="exp-amount-input" placeholder="$0.00" min="0"
+              step="0.01" />
+            <select id="needs-exp-cat" class="exp-select">
+              <option value="🏠 Renta">🏠 Renta</option>
+              <option value="🛒 Comida">🛒 Comida</option>
+              <option value="💡 Servicios">💡 Servicios</option>
+              <option value="🚌 Transporte">🚌 Transporte</option>
+              <option value="💊 Salud">💊 Salud</option>
+              <option value="📚 Educación">📚 Educación</option>
+              <option value="📱 Teléfono">📱 Teléfono</option>
+              <option value="🌐 Internet">🌐 Internet</option>
+              <option value="🧺 Limpieza">🧺 Limpieza</option>
+              <option value="➕ Otro">➕ Otro</option>
+            </select>
+            <button class="btn-add-expense needs-add-btn" onclick="addExpense('needs')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Agregar
+            </button>
+          </div>
+          <div id="needs-expenses" class="expenses-list"></div>
+        </div>
+
+        <!-- WANTS PANEL -->
+        <div id="panel-wants" class="bucket-panel">
+          <div class="panel-header">
+            <div class="panel-header-info">
+              <h2 class="panel-title wants-title">✨ Deseos</h2>
+              <p class="panel-subtitle">Lo que disfrutas y te hace feliz</p>
+            </div>
+            <div class="panel-budget-info">
+              <div class="budget-ring-wrap">
+                <svg class="budget-ring" viewBox="0 0 60 60">
+                  <circle cx="30" cy="30" r="25" class="budget-ring-bg" />
+                  <circle id="wants-ring" cx="30" cy="30" r="25" class="budget-ring-fill wants-ring-fill"
+                    stroke-dasharray="0 157" />
+                </svg>
+                <div class="budget-ring-label">
+                  <span id="wants-used-pct" class="budget-ring-pct">0%</span>
+                </div>
+              </div>
+              <div class="budget-amounts">
+                <div class="budget-row">
+                  <span>Presupuesto</span>
+                  <strong id="wants-budget" class="wants-color">$0.00</strong>
+                </div>
+                <div class="budget-row">
+                  <span>Gastado</span>
+                  <strong id="wants-spent">$0.00</strong>
+                </div>
+                <div class="budget-row">
+                  <span>Disponible</span>
+                  <strong id="wants-remaining" class="wants-color">$0.00</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="add-expense-bar">
+            <input type="text" id="wants-exp-name" class="exp-input" placeholder="Descripción del gasto..." />
+            <input type="number" id="wants-exp-amount" class="exp-amount-input" placeholder="$0.00" min="0"
+              step="0.01" />
+            <select id="wants-exp-cat" class="exp-select">
+              <option value="🎬 Entretenimiento">🎬 Entretenimiento</option>
+              <option value="🍕 Restaurantes">🍕 Restaurantes</option>
+              <option value="👗 Ropa">👗 Ropa</option>
+              <option value="🎮 Videojuegos">🎮 Videojuegos</option>
+              <option value="✈️ Viajes">✈️ Viajes</option>
+              <option value="🎁 Regalos">🎁 Regalos</option>
+              <option value="💄 Belleza">💄 Belleza</option>
+              <option value="🏋️ Gym">🏋️ Gym</option>
+              <option value="📺 Suscripciones">📺 Suscripciones</option>
+              <option value="➕ Otro">➕ Otro</option>
+            </select>
+            <button class="btn-add-expense wants-add-btn" onclick="addExpense('wants')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Agregar
+            </button>
+          </div>
+          <div id="wants-expenses" class="expenses-list"></div>
+        </div>
+
+        <!-- SAVINGS PANEL -->
+        <div id="panel-savings" class="bucket-panel">
+          <div class="panel-header">
+            <div class="panel-header-info">
+              <h2 class="panel-title savings-title">💎 Ahorros</h2>
+              <p class="panel-subtitle">Tu futuro y seguridad financiera</p>
+            </div>
+            <div class="panel-budget-info">
+              <div class="budget-ring-wrap">
+                <svg class="budget-ring" viewBox="0 0 60 60">
+                  <circle cx="30" cy="30" r="25" class="budget-ring-bg" />
+                  <circle id="savings-ring" cx="30" cy="30" r="25" class="budget-ring-fill savings-ring-fill"
+                    stroke-dasharray="0 157" />
+                </svg>
+                <div class="budget-ring-label">
+                  <span id="savings-used-pct" class="budget-ring-pct">0%</span>
+                </div>
+              </div>
+              <div class="budget-amounts">
+                <div class="budget-row">
+                  <span>Presupuesto</span>
+                  <strong id="savings-budget" class="savings-color">$0.00</strong>
+                </div>
+                <div class="budget-row">
+                  <span>Asignado</span>
+                  <strong id="savings-spent">$0.00</strong>
+                </div>
+                <div class="budget-row">
+                  <span>Por asignar</span>
+                  <strong id="savings-remaining" class="savings-color">$0.00</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="add-expense-bar">
+            <input type="text" id="savings-exp-name" class="exp-input" placeholder="Meta o destino del ahorro..." />
+            <input type="number" id="savings-exp-amount" class="exp-amount-input" placeholder="$0.00" min="0"
+              step="0.01" />
+            <select id="savings-exp-cat" class="exp-select">
+              <option value="🆘 Fondo Emergencia">🆘 Fondo Emergencia</option>
+              <option value="📈 Inversión">📈 Inversión</option>
+              <option value="🏡 Casa propia">🏡 Casa propia</option>
+              <option value="🚗 Vehículo">🚗 Vehículo</option>
+              <option value="✈️ Vacaciones">✈️ Vacaciones</option>
+              <option value="🎓 Educación">🎓 Educación</option>
+              <option value="💼 Negocio">💼 Negocio</option>
+              <option value="🎁 Regalo especial">🎁 Regalo especial</option>
+              <option value="➕ Otro">➕ Otro</option>
+            </select>
+            <button class="btn-add-expense savings-add-btn" onclick="addExpense('savings')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Agregar
+            </button>
+          </div>
+          <div id="savings-expenses" class="expenses-list"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- History Screen -->
+    <section id="screen-history" class="screen">
+      <div class="history-header">
+        <button id="btn-back-from-history" class="btn-ghost">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 5l-7 7 7 7" />
+          </svg>
+          Volver
+        </button>
+        <h2 class="history-title">Historial de Quincenas</h2>
+      </div>
+      <div id="history-list" class="history-list"></div>
+    </section>
+
+  </main>
+
+  <!-- Toast notification -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Delete confirm modal -->
+  <div id="modal-confirm" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-icon">🗑️</div>
+      <h3 class="modal-title">¿Eliminar este gasto?</h3>
+      <p class="modal-desc">Esta acción no se puede deshacer.</p>
+      <div class="modal-actions">
+        <button id="modal-cancel" class="btn-ghost">Cancelar</button>
+        <button id="modal-confirm-btn" class="btn-danger">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
