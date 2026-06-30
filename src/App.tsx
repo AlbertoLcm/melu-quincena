@@ -1,39 +1,57 @@
 import { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, History, Plus, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, History, Plus } from 'lucide-react';
 import { useFinanceData } from './hooks/useFinanceData';
 import { SetupScreen } from './components/SetupScreen';
 import { DashboardScreen } from './components/DashboardScreen';
 import { HistoryScreen } from './components/HistoryScreen';
+import { Logo } from './components/Logo';
+
+/** Apply / remove the `dark` class on <html> and remember no preference here —
+ *  the OS is the single source of truth. */
+function applyTheme(dark: boolean) {
+  if (dark) {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+}
 
 function App() {
-  const { state, startPeriod, addExpense, deleteExpense } = useFinanceData();
+  const { state, loading, startPeriod, addExpense, deleteExpense } = useFinanceData();
   const [currentScreen, setCurrentScreen] = useState<'setup' | 'dashboard' | 'history'>('setup');
-  const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem('qf_theme');
-    if (saved) return saved === 'dark';
-    return true;
-  });
 
+  // ── System dark-mode — real-time reactive ────────────────────────────────
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('qf_theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('qf_theme', 'light');
-    }
-  }, [isDark]);
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    applyTheme(mq.matches);
 
-  // Only auto-redirect on initial load (not when user explicitly navigates to setup)
+    const handler = (e: MediaQueryListEvent) => applyTheme(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  // ── Auto-redirect once IndexedDB data is loaded ──────────────────────────
   const didInitialRedirect = useRef(false);
   useEffect(() => {
-    if (!didInitialRedirect.current && state.currentPeriod && currentScreen === 'setup') {
+    if (!loading && !didInitialRedirect.current && state.currentPeriod && currentScreen === 'setup') {
       didInitialRedirect.current = true;
       setCurrentScreen('dashboard');
     }
-  }, [state.currentPeriod, currentScreen]);
+  }, [loading, state.currentPeriod, currentScreen]);
 
   const hasPeriod = !!state.currentPeriod;
+
+  // ── Loading splash ───────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
+        <div className="flex flex-col items-center gap-4">
+          <Logo className="animate-pulse" size={48} />
+          <p className="text-[var(--text-muted)] text-sm tracking-widest uppercase">Cargando…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-x-hidden">
@@ -54,19 +72,11 @@ function App() {
               else setCurrentScreen('setup');
             }}
           >
-            <span className="text-brand-primary">◈</span>
+            <Logo size={24} />
             <span>Melu Quincena</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsDark(!isDark)}
-              className="p-2.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border-color)] rounded-xl transition-colors"
-              title="Alternar tema"
-              aria-label="Cambiar tema"
-            >
-              {isDark ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
             {/* Desktop nav buttons only */}
             <button
               onClick={() => setCurrentScreen('history')}
@@ -157,3 +167,4 @@ function App() {
 }
 
 export default App;
+
