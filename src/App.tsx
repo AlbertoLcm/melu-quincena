@@ -18,7 +18,17 @@ function applyTheme(dark: boolean) {
 }
 
 function App() {
-  const { state, loading, startPeriod, addExpense, deleteExpense } = useFinanceData();
+  const {
+    state,
+    loading,
+    startPeriod,
+    addExpense,
+    deleteExpense,
+    updatePeriod,
+    deletePeriod,
+    setActivePeriod,
+  } = useFinanceData();
+
   const [currentScreen, setCurrentScreen] = useState<'setup' | 'dashboard' | 'history'>('setup');
 
   // ── System dark-mode — real-time reactive ────────────────────────────────
@@ -37,6 +47,24 @@ function App() {
     if (!loading && !didInitialRedirect.current && state.currentPeriod && currentScreen === 'setup') {
       didInitialRedirect.current = true;
       setCurrentScreen('dashboard');
+    }
+  }, [loading, state.currentPeriod, currentScreen]);
+
+  // If the current period was deleted/deactivated while on dashboard, go back to setup
+  useEffect(() => {
+    if (!loading && !state.currentPeriod && currentScreen === 'dashboard') {
+      setCurrentScreen('setup');
+    }
+  }, [loading, state.currentPeriod, currentScreen]);
+
+  // If a period was activated from history, switch to dashboard
+  const prevCurrentId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!loading && state.currentPeriod) {
+      if (prevCurrentId.current !== state.currentPeriod.id && currentScreen === 'history') {
+        setCurrentScreen('dashboard');
+      }
+      prevCurrentId.current = state.currentPeriod.id;
     }
   }, [loading, state.currentPeriod, currentScreen]);
 
@@ -123,6 +151,9 @@ function App() {
               if (state.currentPeriod) setCurrentScreen('dashboard');
               else setCurrentScreen('setup');
             }}
+            onUpdatePeriod={updatePeriod}
+            onDeletePeriod={deletePeriod}
+            onSetActivePeriod={setActivePeriod}
           />
         )}
       </main>
@@ -169,4 +200,3 @@ function App() {
 }
 
 export default App;
-

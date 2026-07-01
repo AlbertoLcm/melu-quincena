@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { loadState, saveState } from './useIndexedDB';
+import {
+  getAllPeriods,
+  savePeriod,
+  deletePeriodFromDB,
+  getCurrentPeriodId,
+  setCurrentPeriodId,
+} from './useIndexedDB';
 
 export type Expense = {
   id: string;
@@ -28,112 +34,181 @@ export type Period = {
   };
 };
 
+/** Legacy shape used only for migration type reference in useIndexedDB */
 export type FinanceState = {
   currentPeriod: Period | null;
   history: Period[];
 };
 
-const EMPTY_STATE: FinanceState = { currentPeriod: null, history: [] };
+function genId() {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
 
 export function useFinanceData() {
-  const [state, setState] = useState<FinanceState>(EMPTY_STATE);
-  // true while the initial IndexedDB read is in-flight
+  const [currentPeriod, setCurrentPeriod] = useState<Period | null>(null);
+  const [history, setHistory] = useState<Period[]>([]);
   const [loading, setLoading] = useState(true);
-  // skip the first save-to-DB triggered by the initial load
   const isFirstRender = useRef(true);
 
   // ── Load from IndexedDB on mount ─────────────────────────────────────────
   useEffect(() => {
-    loadState<FinanceState>().then((saved) => {
-      if (saved) setState(saved);
+    (async () => {
+      const [allPeriods, currentId] = await Promise.all([
+        getAllPeriods(),
+        getCurrentPeriodId(),
+      ]);
+
+      const active = currentId ? allPeriods.find((p) => p.id === currentId) ?? null : null;
+      const hist = allPeriods
+        .filter((p) => p.id !== currentId)
+        .sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
+
+      setCurrentPeriod(active);
+      setHistory(hist);
       setLoading(false);
-    });
+      isFirstRender.current = false;
+    })();
   }, []);
 
-  // ── Persist every state change to IndexedDB ──────────────────────────────
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return; // don't overwrite DB with the empty initial state
-    }
-    saveState(state);
-  }, [state]);
-
   // ── Actions ──────────────────────────────────────────────────────────────
-  const startPeriod = (income: number, dateStart: string, dateEnd: string) => {
+
+  const startPeriod = async (income: number, dateStart: string, dateEnd: string) => {
     const todayISO = new Date().toISOString().slice(0, 10);
-    const uuid = Math.random().toString(36).slice(2) + Date.now().toString(36);
 
-    setState((prev) => {
-      const newHistory = [...prev.history];
-      if (prev.currentPeriod) {
-        newHistory.unshift({ ...prev.currentPeriod, closedAt: todayISO });
-        if (newHistory.length > 12) newHistory.length = 12; // keep last 12
-      }
+    // Close the current period and push to history
+    if (currentPeriod) {
+      const closed = { ...currentPeriod, closedAt: todayISO };
+      await savePeriod(closed);
+      setHistory((prev) => [closed, ...prev]);
+    }
 
-      return {
-        history: newHistory,
-        currentPeriod: {
-          id: uuid,
-          income,
-          dateStart,
-          dateEnd,
-          createdAt: todayISO,
-          buckets: {
-            needs: { allocation: 0.5, expenses: [] },
-            wants: { allocation: 0.3, expenses: [] },
-            savings: { allocation: 0.2, expenses: [] },
-          },
-        },
-      };
-    });
+    const newPeriod: Period = {
+      id: genId(),
+      income,
+      dateStart,
+      dateEnd,
+      createdAt: todayISO,
+      buckets: {
+        needs: { allocation: 0.5, expenses: [] },
+        wants: { allocation: 0.3, expenses: [] },
+        savings: { allocation: 0.2, expenses: [] },
+      },
+    };
+
+    await savePeriod(newPeriod);
+    await setCurrentPeriodId(newPeriod.id);
+    setCurrentPeriod(newPeriod);
   };
 
-  const addExpense = (
+  const addExpense = async (
     bucket: 'needs' | 'wants' | 'savings',
     expense: Omit<Expense, 'id' | 'date'>
   ) => {
-    setState((prev) => {
-      if (!prev.currentPeriod) return prev;
+    if (!currentPeriod) return;
 
-      const newExpense: Expense = {
-        ...expense,
-        id: Math.random().toString(36).slice(2) + Date.now().toString(36),
-        date: new Date().toISOString().slice(0, 10),
-      };
+    const newExpense: Expense = {
+      ...expense,
+      id: genId(),
+      date: new Date().toISOString().slice(0, 10),
+    };
 
-      const updatedBuckets = { ...prev.currentPeriod.buckets };
-      updatedBuckets[bucket] = {
-        ...updatedBuckets[bucket],
-        expenses: [newExpense, ...updatedBuckets[bucket].expenses],
-      };
+    const updated: Period = {
+      ...currentPeriod,
+      buckets: {
+        ...currentPeriod.buckets,
+        [bucket]: {
+          ...currentPeriod.buckets[bucket],
+          expenses: [newExpense, ...currentPeriod.buckets[bucket].expenses],
+        },
+      },
+    };
 
-      return {
-        ...prev,
-        currentPeriod: { ...prev.currentPeriod, buckets: updatedBuckets },
-      };
-    });
+    await savePeriod(updated);
+    setCurrentPeriod(updated);
   };
 
-  const deleteExpense = (
+  const deleteExpense = async (
     bucket: 'needs' | 'wants' | 'savings',
     expenseId: string
   ) => {
-    setState((prev) => {
-      if (!prev.currentPeriod) return prev;
-      const updatedBuckets = { ...prev.currentPeriod.buckets };
-      updatedBuckets[bucket] = {
-        ...updatedBuckets[bucket],
-        expenses: updatedBuckets[bucket].expenses.filter((e) => e.id !== expenseId),
-      };
+    if (!currentPeriod) return;
 
-      return {
-        ...prev,
-        currentPeriod: { ...prev.currentPeriod, buckets: updatedBuckets },
-      };
-    });
+    const updated: Period = {
+      ...currentPeriod,
+      buckets: {
+        ...currentPeriod.buckets,
+        [bucket]: {
+          ...currentPeriod.buckets[bucket],
+          expenses: currentPeriod.buckets[bucket].expenses.filter((e) => e.id !== expenseId),
+        },
+      },
+    };
+
+    await savePeriod(updated);
+    setCurrentPeriod(updated);
   };
 
-  return { state, loading, startPeriod, addExpense, deleteExpense };
-}
+  /** Update income / dates of ANY period (current or history) */
+  const updatePeriod = async (
+    id: string,
+    patch: Partial<Pick<Period, 'income' | 'dateStart' | 'dateEnd'>>
+  ) => {
+    if (currentPeriod && currentPeriod.id === id) {
+      const updated = { ...currentPeriod, ...patch };
+      await savePeriod(updated);
+      setCurrentPeriod(updated);
+    } else {
+      setHistory((prev) =>
+        prev.map((p) => {
+          if (p.id !== id) return p;
+          const updated = { ...p, ...patch };
+          savePeriod(updated);
+          return updated;
+        })
+      );
+    }
+  };
 
+  /** Delete any period (history only — cannot delete the active one directly) */
+  const deletePeriod = async (id: string) => {
+    await deletePeriodFromDB(id);
+    if (currentPeriod && currentPeriod.id === id) {
+      await setCurrentPeriodId(null);
+      setCurrentPeriod(null);
+    } else {
+      setHistory((prev) => prev.filter((p) => p.id !== id));
+    }
+  };
+
+  /** Promote a historical period to become the active current period */
+  const setActivePeriod = async (id: string) => {
+    const target = history.find((p) => p.id === id);
+    if (!target) return;
+
+    // Archive the current period if there is one
+    if (currentPeriod) {
+      const closed = { ...currentPeriod, closedAt: new Date().toISOString().slice(0, 10) };
+      await savePeriod(closed);
+      setHistory((prev) => [closed, ...prev.filter((p) => p.id !== id)]);
+    } else {
+      setHistory((prev) => prev.filter((p) => p.id !== id));
+    }
+
+    // Remove closedAt from the promoted period
+    const activated = { ...target, closedAt: undefined };
+    await savePeriod(activated);
+    await setCurrentPeriodId(id);
+    setCurrentPeriod(activated);
+  };
+
+  return {
+    state: { currentPeriod, history },
+    loading,
+    startPeriod,
+    addExpense,
+    deleteExpense,
+    updatePeriod,
+    deletePeriod,
+    setActivePeriod,
+  };
+}
