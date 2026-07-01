@@ -5,6 +5,7 @@ import { SetupScreen } from './components/SetupScreen';
 import { DashboardScreen } from './components/DashboardScreen';
 import { HistoryScreen } from './components/HistoryScreen';
 import { Logo } from './components/Logo';
+import { Analytics } from "@vercel/analytics/react"
 
 /** Apply / remove the `dark` class on <html> and remember no preference here —
  *  the OS is the single source of truth. */
@@ -162,6 +163,7 @@ function App() {
           <span>Historial</span>
         </button>
       </nav>
+      <Analytics />
     </div>
   );
 }
